@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Available Items</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 600px; margin: 40px auto; }
+    </style>
+</head>
+<body>
+    <h2>Available Items</h2>
+    <a href="/" class="button">Back to Menu</a>
+    <a href="{{ url_for('add') }}" class="button">Add Item</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item['name'] }}</td>
+                <td>{{ item['quantity'] }}</td>
+                <td>{{ item['unit'] }}</td>
+                <td class="actions">
+                    <a href="{{ url_for('movement', id=item['id']) }}">Edit Movement</a>
+                    <form action="{{ url_for('delete', id=item['id']) }}" method="post" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Delete this item?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

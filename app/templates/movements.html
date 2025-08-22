@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Movements</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 900px; margin: 40px auto; }
+        .movement-in { color: #2e7d32; }
+        .movement-out { color: #d32f2f; }
+        .movement-adjust { color: #f57c00; }
+    </style>
+</head>
+<body>
+    <h2>Stock Movements History</h2>
+    <a href="{{ url_for('index') }}" class="button">Back to Dashboard</a>
+    <a href="{{ url_for('add_movement') }}" class="button">Add Movement</a>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Quantity Change</th>
+                <th>Stock After</th>
+                <th>Unit</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movement in movements %}
+            <tr>
+                <td>{{ movement['date'][:16] }}</td>
+                <td>{{ movement['name'] }}</td>
+                <td class="movement-{{ movement['movement_type'] }}">{{ movement['movement_type'].title() }}</td>
+                <td class="movement-{{ movement['movement_type'] }}">
+                    {% if movement['quantity_change'] > 0 %}+{% endif %}{{ movement['quantity_change'] }}
+                </td>
+                <td><strong>{{ movement['running_stock'] }}</strong></td>
+                <td>{{ movement['unit'] }}</td>
+                <td>{{ movement['notes'] or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Item</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Add New Item to Catalog</h2>
+    <form method="post">
+        <label>Item Name
+            <input type="text" name="name" required placeholder="e.g., Tomatoes, Rice, Chicken">
+        </label>
+        <label>Unit of Measurement
+            <input type="text" name="unit" required placeholder="e.g., kg, pieces, liters">
+        </label>
+        <button type="submit">Add Item</button>
+        <a href="{{ url_for('items_catalog') }}">Cancel</a>
+    </form>
+</body>
+</html>

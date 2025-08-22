@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Movement</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Edit Movement for {{ item['name'] }}</h2>
+    <form method="post">
+        <label>Current Quantity
+            <input type="number" value="{{ item['quantity'] }}" readonly>
+        </label>
+        <label>Change (use negative to remove)
+            <input type="number" name="change" required>
+        </label>
+        <button type="submit">Apply Movement</button>
+        <a href="{{ url_for('index') }}">Cancel</a>
+    </form>
+</body>
+</html>

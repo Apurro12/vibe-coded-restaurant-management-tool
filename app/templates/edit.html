@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Item</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Edit Inventory Item</h2>
+    <form method="post">
+        <label>Name
+            <input type="text" name="name" value="{{ item['name'] }}" required>
+        </label>
+        <label>Quantity
+            <input type="number" name="quantity" value="{{ item['quantity'] }}" required>
+        </label>
+        <label>Unit
+            <input type="text" name="unit" value="{{ item['unit'] }}" required>
+        </label>
+        <button type="submit">Save</button>
+        <a href="{{ url_for('index') }}">Cancel</a>
+    </form>
+</body>
+</html>
