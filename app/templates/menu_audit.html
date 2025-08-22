@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de Auditoría del Menú</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 1200px; margin: 40px auto; }
+        table { font-size: 0.9em; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        .action-create { color: #2e7d32; font-weight: bold; }
+        .action-update { color: #f57c00; font-weight: bold; }
+        .action-delete { color: #d32f2f; font-weight: bold; }
+        .values-cell { max-width: 300px; word-wrap: break-word; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h2>Historial de Auditoría del Menú</h2>
+    <a href="{{ url_for('menu') }}" class="button">Volver al Menú</a>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha y Hora</th>
+                <th>Acción</th>
+                <th>ID del Artículo</th>
+                <th>Nombre Actual</th>
+                <th>Valores Anteriores</th>
+                <th>Valores Nuevos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in audit_log %}
+            <tr>
+                <td>{{ log['timestamp'][:19] }}</td>
+                <td class="action-{{ log['action'].lower() }}">{{ log['action'] }}</td>
+                <td>{{ log['menu_item_id'] }}</td>
+                <td>{{ log['current_name'] or '(deleted)' }}</td>
+                <td class="values-cell">{{ log['old_values'] or '-' }}</td>
+                <td class="values-cell">{{ log['new_values'] or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if not audit_log %}
+    <p>No hay historial de auditoría disponible aún.</p>
+    {% endif %}
+</body>
+</html>

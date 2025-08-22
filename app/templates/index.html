@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Restaurant Inventory</title>
+    <title>Inventario del Restaurante</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
     <style>
         body { max-width: 800px; margin: 40px auto; }
@@ -12,22 +12,24 @@
     </style>
 </head>
 <body>
-    <h2>Restaurant Inventory Dashboard</h2>
+    <h2>Panel de Control del Restaurante</h2>
     
     <div class="nav">
-        <a href="{{ url_for('items_catalog') }}" class="button">Manage Items</a>
-        <a href="{{ url_for('movements') }}" class="button">View Movements</a>
-        <a href="{{ url_for('add_movement') }}" class="button">Add Movement</a>
+        <a href="{{ url_for('menu') }}" class="button">Menú</a>
+        <a href="{{ url_for('movements') }}" class="button">Movimientos de Stock</a>
+        <a href="{{ url_for('add_movement') }}" class="button">Agregar Movimiento</a>
+        <a href="{{ url_for('tables') }}" class="button">Mesas</a>
+        <a href="{{ url_for('orders') }}" class="button">Órdenes</a>
     </div>
 
-    <h3>Current Stock Levels</h3>
+    <h3>Niveles de Stock Actuales</h3>
     <table>
         <thead>
             <tr>
-                <th>Item Name</th>
-                <th>Current Stock</th>
-                <th>Unit</th>
-                <th>Status</th>
+                <th>Nombre del Artículo</th>
+                <th>Stock Actual</th>
+                <th>Unidad</th>
+                <th>Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -40,11 +42,11 @@
                 <td>{{ item['unit'] }}</td>
                 <td>
                     {% if item['current_stock'] == 0 %}
-                        <span class="zero-stock">Out of Stock</span>
+                        <span class="zero-stock">Sin Stock</span>
                     {% elif item['current_stock'] < 5 %}
-                        <span class="low-stock">Low Stock</span>
+                        <span class="low-stock">Stock Bajo</span>
                     {% else %}
-                        In Stock
+                        En Stock
                     {% endif %}
                 </td>
             </tr>

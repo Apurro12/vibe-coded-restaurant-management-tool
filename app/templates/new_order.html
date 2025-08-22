@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Orden</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Nueva Orden para Mesa {{ table['table_number'] }}</h2>
+    <p><strong>Capacidad de la Mesa:</strong> {{ table['capacity'] }} personas</p>
+    
+    <form method="post">
+        <label>Nombre del Cliente (Opcional)
+            <input type="text" name="customer_name" placeholder="Nombre del cliente o grupo">
+        </label>
+        <button type="submit">Iniciar Orden</button>
+        <a href="{{ url_for('tables') }}">Cancelar</a>
+    </form>
+</body>
+</html>

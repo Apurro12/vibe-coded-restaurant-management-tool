@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agregar Mesa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Agregar Nueva Mesa</h2>
+    <form method="post">
+        <label>Número de Mesa
+            <input type="number" name="table_number" required placeholder="ej., 1, 2, 3">
+        </label>
+        <label>Capacidad (Número de Asientos)
+            <input type="number" name="capacity" required placeholder="ej., 2, 4, 6">
+        </label>
+        <button type="submit">Agregar Mesa</button>
+        <a href="{{ url_for('tables') }}">Cancelar</a>
+    </form>
+</body>
+</html>

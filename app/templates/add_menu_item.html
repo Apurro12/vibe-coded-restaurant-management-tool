@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Menu Item</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Add Menu Item</h2>
+    <form method="post">
+        <label>Item Name
+            <input type="text" name="name" required placeholder="e.g., Cheeseburger, Coca Cola">
+        </label>
+        <label>Category
+            <select name="category" required>
+                <option value="">Select category...</option>
+                <option value="food">Food</option>
+                <option value="drink">Drink</option>
+                <option value="dessert">Dessert</option>
+            </select>
+        </label>
+        <label>Price
+            <input type="number" step="0.01" name="price" required placeholder="e.g., 12.50">
+        </label>
+        <button type="submit">Add Menu Item</button>
+        <a href="{{ url_for('menu') }}">Cancel</a>
+    </form>
+</body>
+</html>

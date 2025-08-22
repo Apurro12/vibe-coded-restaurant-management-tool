@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión del Menú</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 900px; margin: 40px auto; }
+        .category-food { background-color: #e8f5e8; }
+        .category-drink { background-color: #e3f2fd; }
+        .category-dessert { background-color: #fce4ec; }
+        .add-form { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .add-form h3 { margin-top: 0; }
+        .form-row { display: flex; gap: 15px; align-items: end; }
+        .form-row > div { flex: 1; }
+        .stockable-yes { color: #2e7d32; font-weight: bold; }
+        .stockable-no { color: #666; }
+    </style>
+</head>
+<body>
+    <h2>Gestión del Menú</h2>
+    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('menu_audit') }}" class="button button-outline">Ver Historial de Auditoría</a>
+    
+    <!-- Add Menu Item Form -->
+    <div class="add-form">
+        <h3>Agregar Nuevo Artículo del Menú</h3>
+        <form action="{{ url_for('add_menu_item') }}" method="post">
+            <div class="form-row">
+                <div>
+                    <label>Nombre del Artículo
+                        <input type="text" name="name" required placeholder="ej., Hamburguesa con Queso">
+                    </label>
+                </div>
+                <div>
+                    <label>Descripción
+                        <input type="text" name="description" placeholder="ej., Carne con queso, lechuga, tomate">
+                    </label>
+                </div>
+                <div>
+                    <label>Categoría
+                        <select name="category" required>
+                            <option value="">Seleccionar categoría...</option>
+                            <option value="food">Comida</option>
+                            <option value="drink">Bebida</option>
+                            <option value="dessert">Postre</option>
+                        </select>
+                    </label>
+                </div>
+                <div>
+                    <label>Precio
+                        <input type="number" step="0.01" name="price" required placeholder="ej., 12.50">
+                    </label>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label>
+                        <input type="checkbox" name="stockable">
+                        <span class="label-body">Controlar Stock (requiere movimientos de inventario)</span>
+                    </label>
+                </div>
+                <div>
+                    <button type="submit">Agregar Artículo</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Menu Items Table -->
+    <h3>Artículos del Menú Actuales</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Disponible</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in menu_items %}
+            <tr class="category-{{ item['category'].lower() }}">
+                <td><strong>{{ item['name'] }}</strong></td>
+                <td>{{ item['description'] or '-' }}</td>
+                <td>{{ item['category'].title() }}</td>
+                <td>${{ "%.2f"|format(item['price']) }}</td>
+                <td class="stockable-{{ 'yes' if item['stockable'] else 'no' }}">
+                    {{ 'Sí' if item['stockable'] else 'No' }}
+                </td>
+                <td>{{ 'Sí' if item['available'] else 'No' }}</td>
+                <td>
+                    <a href="{{ url_for('edit_menu_item', id=item['id']) }}" 
+                       style="color:blue;text-decoration:underline;">Editar</a>
+                    | <form action="{{ url_for('delete_menu_item', id=item['id']) }}" method="post" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Eliminar este artículo del menú?')" 
+                                style="background:none;border:none;color:red;text-decoration:underline;cursor:pointer;">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalles de la Orden</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 900px; margin: 40px auto; }
+        .order-summary { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .add-item-form { background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="order-summary">
+        <h2>Orden #{{ order['id'] }} - Mesa {{ order['table_number'] }}</h2>
+        <p><strong>Cliente:</strong> {{ order['customer_name'] or 'Sin nombre' }}</p>
+        <p><strong>Iniciada:</strong> {{ order['created_at'][:16] }}</p>
+        <p><strong>Estado:</strong> {{ order['status'].title() }}</p>
+    </div>
+    
+    <a href="{{ url_for('orders') }}" class="button">Volver a Órdenes</a>
+    <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post" style="display:inline;">
+        <button type="submit" onclick="return confirm('¿Cerrar esta orden?')">Cerrar Orden</button>
+    </form>
+    
+    <h3>Artículos de la Orden</h3>
+    {% if order_items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Artículo</th>
+                    <th>Categoría</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Total</th>
+                    <th>Notas</th>
+                    {% if order['status'] == 'active' %}<th>Acciones</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set total = 0 %}
+                {% for item in order_items %}
+                <tr>
+                    <td>{{ item['name'] }}</td>
+                    <td>{{ item['category'].title() }}</td>
+                    <td>
+                        {% if order['status'] == 'active' %}
+                        <form action="{{ url_for('edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
+                            <input type="number" name="quantity" value="{{ item['quantity'] }}" min="1" style="width:60px;" onchange="this.form.submit()">
+                            <input type="hidden" name="notes" value="{{ item['notes'] or '' }}">
+                        </form>
+                        {% else %}
+                        {{ item['quantity'] }}
+                        {% endif %}
+                    </td>
+                    <td>${{ "%.2f"|format(item['unit_price']) }}</td>
+                    <td>${{ "%.2f"|format(item['quantity'] * item['unit_price']) }}</td>
+                    <td>
+                        {% if order['status'] == 'active' %}
+                        <form action="{{ url_for('edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
+                            <input type="text" name="notes" value="{{ item['notes'] or '' }}" style="width:100px;" placeholder="Notas">
+                            <input type="hidden" name="quantity" value="{{ item['quantity'] }}">
+                            <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;">💾</button>
+                        </form>
+                        {% else %}
+                        {{ item['notes'] or '-' }}
+                        {% endif %}
+                    </td>
+                    {% if order['status'] == 'active' %}
+                    <td>
+                        <form action="{{ url_for('remove_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar este artículo?')">
+                            <button type="submit" style="background:none;border:none;color:red;cursor:pointer;">🗑️</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% set total = total + (item['quantity'] * item['unit_price']) %}
+                {% endfor %}
+                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                    <td colspan="4">Total</td>
+                    <td>${{ "%.2f"|format(total) }}</td>
+                    <td></td>
+                    {% if order['status'] == 'active' %}<td></td>{% endif %}
+                </tr>
+            </tbody>
+        </table>
+    {% else %}
+        <p>No se han ordenado artículos aún.</p>
+    {% endif %}
+    
+    {% if order['status'] == 'active' %}
+    <div class="add-item-form">
+        <h4>Agregar Artículo a la Orden</h4>
+        <form action="{{ url_for('add_order_item', order_id=order['id']) }}" method="post">
+            <label>Artículo del Menú
+                <select name="menu_item_id" required>
+                    <option value="">Seleccionar artículo...</option>
+                    {% for item in menu_items %}
+                    <option value="{{ item['id'] }}">{{ item['name'] }} ({{ item['category'].title() }}) - ${{ "%.2f"|format(item['price']) }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Cantidad
+                <input type="number" name="quantity" value="1" min="1" required>
+            </label>
+            <label>Notas Especiales
+                <input type="text" name="notes" placeholder="Solicitudes especiales, modificaciones, etc.">
+            </label>
+            <button type="submit">Agregar Artículo</button>
+        </form>
+    </div>
+    {% endif %}
+</body>
+</html>

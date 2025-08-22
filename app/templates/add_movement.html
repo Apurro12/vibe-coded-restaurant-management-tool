@@ -2,33 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add Movement</title>
+    <title>Agregar Movimiento</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
     <style>body { max-width: 600px; margin: 40px auto; }</style>
 </head>
 <body>
-    <h2>Add Stock Movement</h2>
+    <h2>Agregar Movimiento de Stock</h2>
     <form method="post">
-        <label>Item
-            <select name="item_id" required>
-                <option value="">Select an item...</option>
+        <label>Artículo
+            <select name="menu_item_id" required>
+                <option value="">Seleccionar un artículo...</option>
                 {% for item in items %}
-                <option value="{{ item['id'] }}">{{ item['name'] }} ({{ item['unit'] }})</option>
+                <option value="{{ item['id'] }}">{{ item['name'] }}</option>
                 {% endfor %}
             </select>
         </label>
         
-        <label>Stock Change
-            <input type="number" name="quantity_change" required placeholder="Enter positive (+) to add stock, negative (-) to remove stock">
-            <small>Examples: +50 (delivery), -10 (sale), -2 (waste)</small>
+        <label>Cambio de Stock
+            <input type="number" name="quantity_change" required placeholder="Ingrese positivo (+) para agregar stock, negativo (-) para remover stock">
+            <small>Ejemplos: +50 (entrega), -10 (venta), -2 (desperdicio)</small>
         </label>
         
-        <label>Notes (Optional)
-            <textarea name="notes" placeholder="Reason for movement: delivery, sale, waste, correction, etc."></textarea>
+        <label>Notas (Opcional)
+            <textarea name="notes" placeholder="Razón del movimiento: entrega, venta, desperdicio, corrección, etc."></textarea>
         </label>
         
-        <button type="submit">Add Movement</button>
-        <a href="{{ url_for('movements') }}">Cancel</a>
+        <button type="submit">Agregar Movimiento</button>
+        <a href="{{ url_for('movements') }}">Cancelar</a>
     </form>
 </body>
 </html>

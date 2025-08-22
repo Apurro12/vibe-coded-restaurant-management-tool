@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mesas del Restaurante</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>
+        body { max-width: 900px; margin: 40px auto; }
+        .table-status { padding: 5px 10px; border-radius: 4px; color: white; font-weight: bold; }
+        .available { background-color: #4caf50; }
+        .occupied { background-color: #f44336; }
+        .table-card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 8px; display: inline-block; width: 200px; }
+    </style>
+</head>
+<body>
+    <h2>Mesas del Restaurante</h2>
+    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('add_table') }}" class="button">Agregar Mesa</a>
+    
+    <div style="margin-top: 20px;">
+        {% for table in tables %}
+        <div class="table-card">
+            <h4>Mesa {{ table['table_number'] }}</h4>
+            <p><strong>Capacidad:</strong> {{ table['capacity'] }} personas</p>
+            <p><strong>Estado:</strong> 
+                {% if table['active_orders'] > 0 %}
+                    <span class="table-status occupied">Ocupada</span>
+                {% else %}
+                    <span class="table-status available">Disponible</span>
+                {% endif %}
+            </p>
+            
+            {% if table['active_orders'] > 0 %}
+                <p><strong>Clientes:</strong> {{ table['customers'] or 'Sin nombre' }}</p>
+                <p><strong>Órdenes:</strong> {{ table['active_orders'] }}</p>
+            {% endif %}
+            
+            <div style="margin-top: 15px;">
+                {% if table['active_orders'] == 0 %}
+                    <a href="{{ url_for('new_order', table_id=table['id']) }}" class="button button-outline">Nueva Orden</a>
+                {% else %}
+                    <a href="{{ url_for('orders') }}" class="button button-outline">Ver Órdenes</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
