@@ -10,16 +10,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_current_stock(item_id):
-    """Calculate current stock for an item based on movements"""
-    conn = get_db_connection()
-    result = conn.execute(
-        'SELECT SUM(quantity_change) as total FROM movements WHERE item_id = ?', 
-        (item_id,)
-    ).fetchone()
-    conn.close()
-    return result['total'] if result['total'] else 0
-
 def get_current_stock_for_menu_item(menu_item_id):
     """Calculate current stock for a menu item based on movements"""
     conn = get_db_connection()
@@ -499,4 +489,4 @@ if __name__ == '__main__':
     
     conn.commit()
     conn.close()
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
