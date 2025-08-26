@@ -15,8 +15,8 @@
 </head>
 <body>
     <h2>Órdenes</h2>
-    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
-    <a href="{{ url_for('tables') }}" class="button">Ver Mesas</a>
+    <a href="{{ url_for('main.index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('tables.tables') }}" class="button">Ver Mesas</a>
     
     <table>
         <thead>
@@ -59,9 +59,9 @@
                 </td>
                 <td>{{ order['comments'] or '-' }}</td>
                 <td>
-                    <a href="{{ url_for('order_detail', order_id=order['id']) }}">Ver</a>
+                    <a href="{{ url_for('orders.order_detail', order_id=order['id']) }}">Ver</a>
                     {% if order['status'] == 'active' %}
-                    | <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post" style="display:inline;">
+                    | <form action="{{ url_for('orders.close_order', order_id=order['id']) }}" method="post" style="display:inline;">
                         <button type="submit" style="background:none;border:none;color:blue;text-decoration:underline;cursor:pointer;" onclick="return confirm('¿Cerrar esta orden?')">Cerrar</button>
                     </form>
                     {% endif %}

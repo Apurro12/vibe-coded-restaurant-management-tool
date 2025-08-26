@@ -19,13 +19,13 @@
 </head>
 <body>
     <h2>Gestión del Menú</h2>
-    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
-    <a href="{{ url_for('menu_audit') }}" class="button button-outline">Ver Historial de Auditoría</a>
+    <a href="{{ url_for('main.index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('menu.menu_audit') }}" class="button button-outline">Ver Historial de Auditoría</a>
     
     <!-- Add Menu Item Form -->
     <div class="add-form">
         <h3>Agregar Nuevo Artículo del Menú</h3>
-        <form action="{{ url_for('add_menu_item') }}" method="post">
+        <form action="{{ url_for('menu.add_menu_item') }}" method="post">
             <div class="form-row">
                 <div>
                     <label>Nombre del Artículo
@@ -77,7 +77,6 @@
                 <th>Categoría</th>
                 <th>Precio</th>
                 <th>Stock</th>
-                <th>Disponible</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -91,11 +90,10 @@
                 <td class="stockable-{{ 'yes' if item['stockable'] else 'no' }}">
                     {{ 'Sí' if item['stockable'] else 'No' }}
                 </td>
-                <td>{{ 'Sí' if item['available'] else 'No' }}</td>
                 <td>
-                    <a href="{{ url_for('edit_menu_item', id=item['id']) }}" 
+                    <a href="{{ url_for('menu.edit_menu_item', id=item['id']) }}" 
                        style="color:blue;text-decoration:underline;">Editar</a>
-                    | <form action="{{ url_for('delete_menu_item', id=item['id']) }}" method="post" style="display:inline;">
+                    | <form action="{{ url_for('menu.delete_menu_item', id=item['id']) }}" method="post" style="display:inline;">
                         <button type="submit" onclick="return confirm('¿Eliminar este artículo del menú?')" 
                                 style="background:none;border:none;color:red;text-decoration:underline;cursor:pointer;">Eliminar</button>
                     </form>

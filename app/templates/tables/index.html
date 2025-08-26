@@ -14,8 +14,8 @@
 </head>
 <body>
     <h2>Mesas del Restaurante</h2>
-    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
-    <a href="{{ url_for('add_table') }}" class="button">Agregar Mesa</a>
+    <a href="{{ url_for('main.index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('tables.add_table') }}" class="button">Agregar Mesa</a>
     
     <div style="margin-top: 20px;">
         {% for table in tables %}
@@ -37,9 +37,9 @@
             
             <div style="margin-top: 15px;">
                 {% if table['active_orders'] == 0 %}
-                    <a href="{{ url_for('new_order', table_id=table['id']) }}" class="button button-outline">Nueva Orden</a>
+                    <a href="{{ url_for('orders.new_order', table_id=table['id']) }}" class="button button-outline">Nueva Orden</a>
                 {% else %}
-                    <a href="{{ url_for('orders') }}" class="button button-outline">Ver Órdenes</a>
+                    <a href="{{ url_for('orders.orders') }}" class="button button-outline">Ver Órdenes</a>
                 {% endif %}
             </div>
         </div>

@@ -6,15 +6,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
     <style>
         body { max-width: 900px; margin: 40px auto; }
-        .movement-in { color: #2e7d32; }
-        .movement-out { color: #d32f2f; }
-        .movement-adjust { color: #f57c00; }
+        .movement-Entrada { color: #2e7d32; }
+        .movement-Salida { color: #d32f2f; }
+        .movement-Comentario { color: #f57c00; }
     </style>
 </head>
 <body>
     <h2>Historial de Movimientos de Stock</h2>
-    <a href="{{ url_for('index') }}" class="button">Volver al Panel</a>
-    <a href="{{ url_for('add_movement') }}" class="button">Agregar Movimiento</a>
+    <a href="{{ url_for('main.index') }}" class="button">Volver al Panel</a>
+    <a href="{{ url_for('movements.add_movement') }}" class="button">Agregar Movimiento</a>
     
     <table>
         <thead>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agregar Artículo del Menú</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <style>body { max-width: 600px; margin: 40px auto; }</style>
+</head>
+<body>
+    <h2>Agregar Artículo del Menú</h2>
+    
+    <form method="post">
+        <label>Nombre
+            <input type="text" name="name" required>
+        </label>
+        
+        <label>Descripción
+            <textarea name="description" rows="3"></textarea>
+        </label>
+        
+        <label>Categoría
+            <input type="text" name="category" required>
+        </label>
+        
+        <label>Precio ($)
+            <input type="number" name="price" step="0.01" required>
+        </label>
+        
+        <label>
+            <input type="checkbox" name="stockable">
+            <span>Artículo con stock (se resta del inventario al cerrar órdenes)</span>
+        </label>
+        
+        <button type="submit">Agregar Artículo</button>
+        <a href="{{ url_for('menu.index') }}" class="button button-outline">Cancelar</a>
+    </form>
+</body>
+</html>

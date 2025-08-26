@@ -40,7 +40,7 @@
     </div>
     {% endif %}
     
-    <a href="{{ url_for('orders') }}" class="button">Volver a Órdenes</a>
+    <a href="{{ url_for('orders.orders') }}" class="button">Volver a Órdenes</a>
     
     {% if order['status'] == 'active' %}
     <button type="button" onclick="showPaymentModal()">Cerrar Orden</button>

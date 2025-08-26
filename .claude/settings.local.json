@@ -2,8 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(python:*)",
-      "Bash(source:*)",
-      "Bash(pip install:*)"
+      "Bash(source:*)"
     ],
     "deny": [],
     "ask": []
