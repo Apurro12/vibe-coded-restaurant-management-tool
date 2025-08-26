@@ -229,10 +229,10 @@ def orders():
     # Get all orders in CSV-like format
     orders = conn.execute('''
         SELECT o.id, rt.table_number, o.created_at, o.closed_at, 
-               o.customer_name, o.comments, o.status, o.payment_method,
+               o.customer_name, o.comments, o.status,
                COUNT(oi.id) as item_count,
                SUM(oi.quantity * oi.unit_price) as calculated_total,
-               GROUP_CONCAT(mi.name || ' x' || oi.quantity, ', ') as items_list
+               GROUP_CONCAT(mi.name || ': ' || oi.quantity, ', ') as items_list
         FROM orders o
         JOIN restaurant_tables rt ON o.table_id = rt.id
         LEFT JOIN order_items oi ON o.id = oi.order_id
@@ -241,8 +241,23 @@ def orders():
         ORDER BY o.created_at DESC
     ''').fetchall()
     
+    # Get payment information for each order
+    orders_with_payments = []
+    for order in orders:
+        payments = conn.execute('''
+            SELECT payment_method, amount 
+            FROM order_payments 
+            WHERE order_id = ?
+            ORDER BY created_at
+        ''', (order['id'],)).fetchall()
+        
+        # Convert order to dict and add payments
+        order_dict = dict(order)
+        order_dict['payments'] = payments
+        orders_with_payments.append(order_dict)
+    
     conn.close()
-    return render_template('orders.html', orders=orders)
+    return render_template('orders.html', orders=orders_with_payments)
 
 @app.route('/orders/new/<int:table_id>', methods=('GET', 'POST'))
 def new_order(table_id):
@@ -289,12 +304,20 @@ def order_detail(order_id):
     # Get available menu items for adding
     menu_items = conn.execute('SELECT * FROM menu_items WHERE available = 1 ORDER BY category, name').fetchall()
     
+    # Get payment history for this order
+    payments = conn.execute('''
+        SELECT payment_method, amount, created_at
+        FROM order_payments 
+        WHERE order_id = ?
+        ORDER BY created_at
+    ''', (order_id,)).fetchall()
+    
     conn.close()
     
     # Calculate total in Python (more reliable than Jinja2 loop)
     total = sum(item['quantity'] * item['unit_price'] for item in order_items)
     
-    return render_template('order_detail.html', order=order, order_items=order_items, menu_items=menu_items, total=total)
+    return render_template('order_detail.html', order=order, order_items=order_items, menu_items=menu_items, total=total, payments=payments)
 
 @app.route('/orders/<int:order_id>/add_item', methods=('POST',))
 def add_order_item(order_id):
@@ -370,11 +393,35 @@ def remove_order_item(order_id, item_id):
 
 @app.route('/orders/<int:order_id>/close', methods=('POST',))
 def close_order(order_id):
-    payment_method = request.form.get('payment_method', 'indefinido')
+    # Get payment methods and amounts from form
+    payment_methods = request.form.getlist('payment_method[]')
+    amounts_str = request.form.getlist('amount[]')
+    
+    # Convert amounts to float and validate
+    try:
+        amounts = [float(x) for x in amounts_str if x.strip()]
+    except ValueError:
+        return "Error: Invalid payment amounts", 400
+    
+    if len(payment_methods) != len(amounts):
+        return "Error: Mismatch between payment methods and amounts", 400
     
     conn = get_db_connection()
     
-    # Get all current order items for this order
+    # Calculate order total
+    order_total_result = conn.execute('''
+        SELECT SUM(oi.quantity * oi.unit_price) as total
+        FROM order_items oi
+        WHERE oi.order_id = ?
+    ''', (order_id,)).fetchone()
+    order_total = order_total_result['total'] or 0
+    
+    # Validate payment total matches order total
+    payment_total = sum(amounts)
+    if abs(order_total - payment_total) > 0.01:  # Allow 1 cent rounding difference
+        return f"Error: Payment total ${payment_total:.2f} doesn't match order total ${order_total:.2f}", 400
+    
+    # Get all current order items for stock movements
     order_items = conn.execute('''
         SELECT oi.menu_item_id, oi.quantity, mi.name, mi.stockable
         FROM order_items oi
@@ -391,9 +438,17 @@ def close_order(order_id):
                 VALUES (?, ?, ?, ?, ?)
             ''', (item['menu_item_id'], -item['quantity'], 'out', movement_notes, datetime.now()))
     
-    # Close the order with payment method
-    conn.execute('UPDATE orders SET status = ?, closed_at = ?, payment_method = ? WHERE id = ?', 
-                ('closed', datetime.now(), payment_method, order_id))
+    # Save all payments
+    for method, amount in zip(payment_methods, amounts):
+        if amount > 0:  # Only save payments with positive amounts
+            conn.execute('''
+                INSERT INTO order_payments (order_id, payment_method, amount, created_at)
+                VALUES (?, ?, ?, ?)
+            ''', (order_id, method, amount, datetime.now()))
+    
+    # Close the order
+    conn.execute('UPDATE orders SET status = ?, closed_at = ? WHERE id = ?', 
+                ('closed', datetime.now(), order_id))
     
     conn.commit()
     conn.close()
@@ -452,7 +507,6 @@ if __name__ == '__main__':
         created_at DATETIME NOT NULL,
         closed_at DATETIME,
         comments TEXT,
-        payment_method TEXT NOT NULL,
         total_amount DECIMAL(10,2) DEFAULT 0,
         FOREIGN KEY (table_id) REFERENCES restaurant_tables (id)
     )''')
@@ -467,6 +521,17 @@ if __name__ == '__main__':
         notes TEXT,
         FOREIGN KEY (order_id) REFERENCES orders (id),
         FOREIGN KEY (menu_item_id) REFERENCES menu_items (id)
+    )''')
+    
+    # Order payments - supports split payments
+    conn.execute('''CREATE TABLE IF NOT EXISTS order_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        payment_method TEXT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        notes TEXT,
+        created_at DATETIME NOT NULL,
+        FOREIGN KEY (order_id) REFERENCES orders (id)
     )''')
     
     # Menu audit trail

@@ -16,49 +16,139 @@
         <p><strong>Cliente:</strong> {{ order['customer_name'] or 'Sin nombre' }}</p>
         <p><strong>Iniciada:</strong> {{ order['created_at'][:16] }}</p>
         <p><strong>Estado:</strong> {{ order['status'].title() }}</p>
-        <p><strong>Método de Pago:</strong> 
-            {% if order['payment_method'] == 'efectivo' %}Efectivo
-            {% elif order['payment_method'] == 'transferencia' %}Transferencia Bancaria
-            {% elif order['payment_method'] == 'qr' %}Código QR
-            {% elif order['payment_method'] == 'tarjeta' %}Tarjeta
-            {% else %}{{ order['payment_method'] or 'No especificado' }}
-            {% endif %}
-        </p>
     </div>
+    
+    {% if payments and order['status'] == 'closed' %}
+    <div style="background: #e8f5e8; padding: 15px; margin: 20px 0; border-radius: 4px; border-left: 4px solid #4caf50;">
+        <h4>💳 Pagos Realizados</h4>
+        {% for payment in payments %}
+        <div style="margin-bottom: 8px;">
+            <strong>
+                {% if payment['payment_method'] == 'efectivo' %}Efectivo
+                {% elif payment['payment_method'] == 'transferencia' %}Transferencia Bancaria
+                {% elif payment['payment_method'] == 'qr' %}Código QR
+                {% elif payment['payment_method'] == 'tarjeta' %}Tarjeta
+                {% else %}{{ payment['payment_method'] }}
+                {% endif %}
+            </strong>: ${{ "%.2f"|format(payment['amount']) }}
+            <small style="color: #666; margin-left: 10px;">{{ payment['created_at'][:16] }}</small>
+        </div>
+        {% endfor %}
+        <div style="border-top: 1px solid #4caf50; margin-top: 10px; padding-top: 8px;">
+            <strong>Total Pagado: ${{ "%.2f"|format(payments|sum(attribute='amount')) }}</strong>
+        </div>
+    </div>
+    {% endif %}
     
     <a href="{{ url_for('orders') }}" class="button">Volver a Órdenes</a>
     
     {% if order['status'] == 'active' %}
     <button type="button" onclick="showPaymentModal()">Cerrar Orden</button>
     
-    <!-- Payment Method Modal -->
+    <!-- Split Payment Modal -->
     <div id="paymentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%;">
-            <h3>Seleccionar Método de Pago</h3>
-            <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post">
-                <label>Método de Pago
-                    <select name="payment_method" required style="margin-bottom: 20px;">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia Bancaria</option>
-                        <option value="qr">Código QR</option>
-                        <option value="tarjeta">Tarjeta</option>
-                    </select>
-                </label>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+            <h3>Métodos de Pago</h3>
+            <p><strong>Total de la Orden: $<span id="orderTotal">{{ "%.2f"|format(total) }}</span></strong></p>
+            
+            <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post" id="paymentForm">
+                <div id="paymentsContainer">
+                    <!-- First payment row -->
+                    <div class="payment-row" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <select name="payment_method[]" required style="flex: 1;">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia Bancaria</option>
+                            <option value="qr">Código QR</option>
+                            <option value="tarjeta">Tarjeta</option>
+                        </select>
+                        <input type="number" name="amount[]" placeholder="Monto" step="0.01" min="0.01" required style="width: 100px;" onchange="updateRemaining()">
+                        <button type="button" onclick="removePayment(this)" style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px;">❌</button>
+                    </div>
+                </div>
+                
+                <button type="button" onclick="addPayment()" style="background: #4caf50; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-bottom: 15px;">+ Agregar Método</button>
+                
+                <div style="margin-bottom: 20px;">
+                    <strong>Restante: $<span id="remaining">{{ "%.2f"|format(total) }}</span></strong>
+                    <div id="validation-error" style="color: red; margin-top: 5px; display: none;"></div>
+                </div>
+                
                 <div>
-                    <button type="submit" style="margin-right: 10px;">Cerrar Orden</button>
-                    <button type="button" onclick="hidePaymentModal()">Cancelar</button>
+                    <button type="submit" id="closeBtn" disabled style="margin-right: 10px; background: #666; color: white; border: none; padding: 10px 20px; border-radius: 4px;">Cerrar Orden</button>
+                    <button type="button" onclick="hidePaymentModal()" style="background: #ddd; border: none; padding: 10px 20px; border-radius: 4px;">Cancelar</button>
                 </div>
             </form>
         </div>
     </div>
     
     <script>
+        const orderTotal = {{ total }};
+        
         function showPaymentModal() {
             document.getElementById('paymentModal').style.display = 'block';
+            updateRemaining();
         }
         
         function hidePaymentModal() {
             document.getElementById('paymentModal').style.display = 'none';
+        }
+        
+        function addPayment() {
+            const container = document.getElementById('paymentsContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'payment-row';
+            newRow.style = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+            newRow.innerHTML = `
+                <select name="payment_method[]" required style="flex: 1;">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="qr">Código QR</option>
+                    <option value="tarjeta">Tarjeta</option>
+                </select>
+                <input type="number" name="amount[]" placeholder="Monto" step="0.01" min="0.01" required style="width: 100px;" onchange="updateRemaining()">
+                <button type="button" onclick="removePayment(this)" style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px;">❌</button>
+            `;
+            container.appendChild(newRow);
+        }
+        
+        function removePayment(btn) {
+            const rows = document.querySelectorAll('.payment-row');
+            if (rows.length > 1) {  // Don't remove the last payment row
+                btn.parentElement.remove();
+                updateRemaining();
+            }
+        }
+        
+        function updateRemaining() {
+            const amountInputs = document.querySelectorAll('input[name="amount[]"]');
+            let totalPayments = 0;
+            
+            amountInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                totalPayments += value;
+            });
+            
+            const remaining = orderTotal - totalPayments;
+            document.getElementById('remaining').textContent = remaining.toFixed(2);
+            
+            const closeBtn = document.getElementById('closeBtn');
+            const errorDiv = document.getElementById('validation-error');
+            
+            if (Math.abs(remaining) < 0.01) {  // Allow 1 cent rounding
+                closeBtn.disabled = false;
+                closeBtn.style.background = '#4caf50';
+                errorDiv.style.display = 'none';
+            } else {
+                closeBtn.disabled = true;
+                closeBtn.style.background = '#666';
+                if (remaining < 0) {
+                    errorDiv.textContent = `Exceso de $${Math.abs(remaining).toFixed(2)}`;
+                    errorDiv.style.display = 'block';
+                } else {
+                    errorDiv.textContent = `Faltan $${remaining.toFixed(2)}`;
+                    errorDiv.style.display = 'block';
+                }
+            }
         }
         
         // Close modal when clicking outside

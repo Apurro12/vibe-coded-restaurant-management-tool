@@ -42,11 +42,19 @@
                 <td>${{ "%.2f"|format(order['calculated_total'] or 0) }}</td>
                 <td>{{ order['customer_name'] or '-' }}</td>
                 <td>
-                    {% if order['payment_method'] == 'efectivo' %}Efectivo
-                    {% elif order['payment_method'] == 'transferencia' %}Transferencia
-                    {% elif order['payment_method'] == 'qr' %}QR
-                    {% elif order['payment_method'] == 'tarjeta' %}Tarjeta
-                    {% else %}{{ order['payment_method'] or '-' }}
+                    {% if order['payments'] %}
+                        {% for payment in order['payments'] %}
+                            {% if payment['payment_method'] == 'efectivo' %}Efectivo
+                            {% elif payment['payment_method'] == 'transferencia' %}Transferencia
+                            {% elif payment['payment_method'] == 'qr' %}QR
+                            {% elif payment['payment_method'] == 'tarjeta' %}Tarjeta
+                            {% else %}{{ payment['payment_method'] }}
+                            {% endif %}
+                            ${{ "%.2f"|format(payment['amount']) }}
+                            {% if not loop.last %}<br>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% if order['status'] == 'closed' %}Sin pagos{% else %}-{% endif %}
                     {% endif %}
                 </td>
                 <td>{{ order['comments'] or '-' }}</td>
