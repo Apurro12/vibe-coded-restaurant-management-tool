@@ -38,7 +38,6 @@
                 </tr>
             </thead>
             <tbody>
-                {% set total = 0 %}
                 {% for item in order_items %}
                 <tr>
                     <td>{{ item['name'] }}</td>
@@ -74,7 +73,6 @@
                     </td>
                     {% endif %}
                 </tr>
-                {% set total = total + (item['quantity'] * item['unit_price']) %}
                 {% endfor %}
                 <tr style="font-weight: bold; border-top: 2px solid #333;">
                     <td colspan="4">Total</td>

@@ -290,7 +290,11 @@ def order_detail(order_id):
     menu_items = conn.execute('SELECT * FROM menu_items WHERE available = 1 ORDER BY category, name').fetchall()
     
     conn.close()
-    return render_template('order_detail.html', order=order, order_items=order_items, menu_items=menu_items)
+    
+    # Calculate total in Python (more reliable than Jinja2 loop)
+    total = sum(item['quantity'] * item['unit_price'] for item in order_items)
+    
+    return render_template('order_detail.html', order=order, order_items=order_items, menu_items=menu_items, total=total)
 
 @app.route('/orders/<int:order_id>/add_item', methods=('POST',))
 def add_order_item(order_id):
