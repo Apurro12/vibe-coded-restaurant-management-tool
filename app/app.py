@@ -135,32 +135,31 @@ def add_table():
 @app.route('/menu')
 def menu():
     conn = get_db_connection()
+    # Hard delete, all items in this table exists
     menu_items = conn.execute('SELECT * FROM menu_items ORDER BY category, name').fetchall()
     conn.close()
     return render_template('menu.html', menu_items=menu_items)
 
-@app.route('/menu/add', methods=('GET', 'POST'))
+@app.route('/menu/add', methods=('POST',))
 def add_menu_item():
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form.get('description', '')
-        category = request.form['category']
-        price = float(request.form['price'])
-        stockable = 1 if request.form.get('stockable') == 'on' else 0
-        
-        conn = get_db_connection()
-        cursor = conn.execute('INSERT INTO menu_items (name, description, category, price, stockable) VALUES (?, ?, ?, ?, ?)', 
-                    (name, description, category, price, stockable))
-        menu_item_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        # Log creation
-        new_values = f"name: {name}, description: {description}, category: {category}, price: ${price}, stockable: {stockable}"
-        log_menu_audit(menu_item_id, 'CREATE', None, new_values)
-        
-        return redirect(url_for('menu'))
-    return render_template('add_menu_item.html')
+    name = request.form['name']
+    description = request.form.get('description', '')
+    category = request.form['category']
+    price = float(request.form['price'])
+    stockable = 1 if request.form.get('stockable') == 'on' else 0
+    
+    conn = get_db_connection()
+    cursor = conn.execute('INSERT INTO menu_items (name, description, category, price, stockable) VALUES (?, ?, ?, ?, ?)', 
+                (name, description, category, price, stockable))
+    menu_item_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    # Log creation
+    new_values = f"name: {name}, description: {description}, category: {category}, price: ${price}, stockable: {stockable}"
+    log_menu_audit(menu_item_id, 'CREATE', None, new_values)
+    
+    return redirect(url_for('menu'))
 
 @app.route('/menu/edit/<int:id>', methods=('GET', 'POST'))
 def edit_menu_item(id):
@@ -495,9 +494,7 @@ if __name__ == '__main__':
         description TEXT,
         category TEXT NOT NULL,
         price DECIMAL(10,2) NOT NULL,
-        available BOOLEAN DEFAULT 1,
-        stockable BOOLEAN DEFAULT 0,
-        unit TEXT
+        stockable BOOLEAN DEFAULT 0
     )''')
     
     # Customer orders
