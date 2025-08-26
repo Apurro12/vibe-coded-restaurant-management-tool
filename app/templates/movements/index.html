@@ -37,7 +37,7 @@
                 <td class="movement-{{ movement['movement_type'] }}">
                     {% if movement['quantity_change'] > 0 %}+{% endif %}{{ movement['quantity_change'] }}
                 </td>
-                <td><strong>{{ movement['running_stock'] }}</strong></td>
+                <td><strong>{{ movement['partial_stock'] }}</strong></td>
                 <td>{{ movement['unit'] }}</td>
                 <td>{{ movement['notes'] or '-' }}</td>
             </tr>

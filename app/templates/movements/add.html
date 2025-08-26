@@ -13,9 +13,10 @@
             <select name="menu_item_id" required>
                 <option value="">Seleccionar un artículo...</option>
                 {% for item in items %}
-                <option value="{{ item['id'] }}">{{ item['name'] }}</option>
+                <option value="{{ item['id'] }}" data-name="{{ item['name'] }}">{{ item['name'] }}</option>
                 {% endfor %}
             </select>
+            <input type="hidden" name="item_name" id="item_name" value="">
         </label>
         
         <label>Cambio de Stock
@@ -30,5 +31,13 @@
         <button type="submit">Agregar Movimiento</button>
         <a href="{{ url_for('movements.movements') }}">Cancelar</a>
     </form>
+    
+    <script>
+        document.querySelector('select[name="menu_item_id"]').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const itemName = selectedOption.getAttribute('data-name') || '';
+            document.getElementById('item_name').value = itemName;
+        });
+    </script>
 </body>
 </html>

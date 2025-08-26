@@ -11,15 +11,9 @@ from utils import get_db_connection
 def movements():
     conn = get_db_connection()
     movements = conn.execute('''
-        SELECT m.*, 
-               COALESCE(i.name, mi.name) as name, 
-               COALESCE(i.unit, 'units') as unit,
-               SUM(m2.quantity_change) as running_stock
+        SELECT  m.*,
+                'units' as unit
         FROM movements m 
-        LEFT JOIN items i ON m.item_id = i.id 
-        LEFT JOIN menu_items mi ON m.menu_item_id = mi.id
-        LEFT JOIN movements m2 ON (m2.item_id = m.item_id OR m2.menu_item_id = m.menu_item_id) AND m2.date <= m.date
-        GROUP BY m.id, m.item_id, m.menu_item_id, m.quantity_change, m.movement_type, m.notes, m.date
         ORDER BY m.date DESC
     ''').fetchall()
     conn.close()
@@ -31,6 +25,7 @@ def add_movement():
         menu_item_id = request.form['menu_item_id']
         quantity_change = int(request.form['quantity_change'])
         notes = request.form.get('notes', '')
+        item_name = request.form.get('item_name', '')
         
         # Determine movement type based on quantity
         if quantity_change > 0:
@@ -41,10 +36,28 @@ def add_movement():
             movement_type = 'Comentario'
         
         conn = get_db_connection()
+
+        last_movement = conn.execute('''
+            select "partial_stock"
+            from movements
+            where "id" in (
+                SELECT max("id") "id"
+                FROM movements
+                where menu_item_id = ?
+            )''', (menu_item_id,)).fetchone()
+        
+        # If is the first movement return zero
+        # Here I need to be sure that is not None or something strange
+        if last_movement is None:
+            last_movement = 0
+        else:
+            last_movement = last_movement["partial_stock"]
+        last_movement += quantity_change
+
         conn.execute('''
-            INSERT INTO movements (menu_item_id, quantity_change, movement_type, notes, date) 
-            VALUES (?, ?, ?, ?, ?)
-        ''', (menu_item_id, quantity_change, movement_type, notes, datetime.now()))
+            INSERT INTO movements (menu_item_id, menu_item_name, quantity_change, movement_type, notes, date, partial_stock) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (menu_item_id, item_name, quantity_change, movement_type, notes, datetime.now(), last_movement))
         conn.commit()
         conn.close()
         return redirect(url_for('movements.movements'))

@@ -33,25 +33,18 @@ def log_menu_audit(menu_item_id, action, old_values=None, new_values=None):
 def init_database():
     """Initialize database tables"""
     conn = get_db_connection()
-    
-    # Items catalog table
-    conn.execute('''CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        unit TEXT NOT NULL
-    )''')
+
     
     # Movements tracking table
     conn.execute('''CREATE TABLE IF NOT EXISTS movements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id INTEGER,
         menu_item_id INTEGER,
+        menu_item_name TEXT NOT NULL,
         quantity_change INTEGER NOT NULL,
         movement_type TEXT NOT NULL,
         notes TEXT,
-        date DATETIME NOT NULL,
-        FOREIGN KEY (item_id) REFERENCES items (id),
-        FOREIGN KEY (menu_item_id) REFERENCES menu_items (id)
+        partial_stock INTEGER, 
+        date DATETIME NOT NULL
     )''')
     
     # Restaurant tables
