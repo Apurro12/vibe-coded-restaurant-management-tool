@@ -23,21 +23,18 @@
             <h4>Mesa {{ table['table_number'] }}</h4>
             <p><strong>Capacidad:</strong> {{ table['capacity'] }} personas</p>
             <p><strong>Estado:</strong> 
-                {% if table['active_orders'] > 0 %}
+                {% if table['status'] == 'in use' %}
                     <span class="table-status occupied">Ocupada</span>
                 {% else %}
                     <span class="table-status available">Disponible</span>
                 {% endif %}
             </p>
             
-            {% if table['active_orders'] > 0 %}
-                <p><strong>Clientes:</strong> {{ table['customers'] or 'Sin nombre' }}</p>
-                <p><strong>Órdenes:</strong> {{ table['active_orders'] }}</p>
-            {% endif %}
+            <p><strong>Clientes:</strong> {{ (table['customers'] or 'Sin nombre') if table['status'] == 'in use' else '' }}</p>
             
             <div style="margin-top: 15px;">
                 {% if table['active_orders'] == 0 %}
-                    <a href="{{ url_for('orders.new_order', table_id=table['id']) }}" class="button button-outline">Nueva Orden</a>
+                    <a href="{{ url_for('orders.new_order', table_id=table['table_number']) }}" class="button button-outline">Nueva Orden</a>
                 {% else %}
                     <a href="{{ url_for('orders.orders') }}" class="button button-outline">Ver Órdenes</a>
                 {% endif %}

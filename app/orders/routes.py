@@ -14,12 +14,12 @@ def orders():
     # Get all orders in CSV-like format
     orders = conn.execute('''
         SELECT o.id, rt.table_number, o.created_at, o.closed_at, 
-               o.customer_name, o.comments, o.status,
+               o.customer_name, o.status,
                COUNT(oi.id) as item_count,
                SUM(oi.quantity * oi.unit_price) as calculated_total,
                GROUP_CONCAT(mi.name || ': ' || oi.quantity, ', ') as items_list
         FROM orders o
-        JOIN restaurant_tables rt ON o.table_id = rt.id
+        JOIN restaurant_tables rt ON o.table_id = rt.table_number
         LEFT JOIN order_items oi ON o.id = oi.order_id
         LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
         GROUP BY o.id
@@ -51,9 +51,15 @@ def new_order(table_id):
         
         conn = get_db_connection()
         cursor = conn.execute('''
-            INSERT INTO orders (table_id, customer_name, created_at) 
-            VALUES (?, ?, ?)
-        ''', (table_id, customer_name, datetime.now()))
+            INSERT INTO orders (table_id, customer_name, created_at, status) 
+            VALUES (?, ?, ?, ?)
+        ''', (table_id, customer_name, datetime.now(), 'active'))
+
+        conn.execute('''
+            update restaurant_tables
+            set "status" = 'in use'
+            where table_number = ?
+        ''', (table_id,))
         
         order_id = cursor.lastrowid
         conn.commit()
@@ -62,7 +68,7 @@ def new_order(table_id):
     
     # Get table info
     conn = get_db_connection()
-    table = conn.execute('SELECT * FROM restaurant_tables WHERE id = ?', (table_id,)).fetchone()
+    table = conn.execute('SELECT * FROM restaurant_tables WHERE table_number = ?', (table_id,)).fetchone()
     conn.close()
     return render_template('orders/new.html', table=table)
 
@@ -74,7 +80,7 @@ def order_detail(order_id):
     order = conn.execute('''
         SELECT o.*, rt.table_number 
         FROM orders o 
-        JOIN restaurant_tables rt ON o.table_id = rt.id 
+        JOIN restaurant_tables rt ON o.table_id = rt.table_number 
         WHERE o.id = ?
     ''', (order_id,)).fetchone()
     

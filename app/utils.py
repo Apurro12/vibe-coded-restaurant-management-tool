@@ -49,10 +49,10 @@ def init_database():
     
     # Restaurant tables
     conn.execute('''CREATE TABLE IF NOT EXISTS restaurant_tables (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
         table_number INTEGER NOT NULL UNIQUE,
         capacity INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'available'
+        status TEXT NOT NULL,
+        customer_name TEXT  
     )''')
     
     # Menu items (food and drinks)
@@ -70,12 +70,10 @@ def init_database():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         table_id INTEGER NOT NULL,
         customer_name TEXT,
-        status TEXT NOT NULL DEFAULT 'active',
+        status TEXT NOT NULL,
         created_at DATETIME NOT NULL,
         closed_at DATETIME,
-        comments TEXT,
-        total_amount DECIMAL(10,2) DEFAULT 0,
-        FOREIGN KEY (table_id) REFERENCES restaurant_tables (id)
+        total_amount DECIMAL(10,2)
     )''')
     
     # Individual items in an order

@@ -10,13 +10,11 @@ from utils import get_db_connection
 def tables():
     conn = get_db_connection()
     tables = conn.execute('''
-        SELECT rt.*, 
-               COUNT(o.id) as active_orders,
-               GROUP_CONCAT(o.customer_name) as customers
-        FROM restaurant_tables rt
-        LEFT JOIN orders o ON rt.id = o.table_id AND o.status = 'active'
-        GROUP BY rt.id
-        ORDER BY rt.table_number
+        SELECT  table_number,
+                capacity,
+                status,
+                customer_name as customer
+        FROM restaurant_tables
     ''').fetchall()
     conn.close()
     return render_template('tables/index.html', tables=tables)
@@ -28,8 +26,8 @@ def add_table():
         capacity = int(request.form['capacity'])
         
         conn = get_db_connection()
-        conn.execute('INSERT INTO restaurant_tables (table_number, capacity) VALUES (?, ?)', 
-                    (table_number, capacity))
+        conn.execute('INSERT INTO restaurant_tables (table_number, capacity, status) VALUES (?, ?, ?)', 
+                    (table_number, capacity, 'available'))
         conn.commit()
         conn.close()
         return redirect(url_for('tables.tables'))
