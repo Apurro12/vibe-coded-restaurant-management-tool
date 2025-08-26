@@ -229,7 +229,7 @@ def orders():
     # Get all orders in CSV-like format
     orders = conn.execute('''
         SELECT o.id, rt.table_number, o.created_at, o.closed_at, 
-               o.customer_name, o.comments, o.status,
+               o.customer_name, o.comments, o.status, o.payment_method,
                COUNT(oi.id) as item_count,
                SUM(oi.quantity * oi.unit_price) as calculated_total,
                GROUP_CONCAT(mi.name || ' x' || oi.quantity, ', ') as items_list
@@ -370,6 +370,8 @@ def remove_order_item(order_id, item_id):
 
 @app.route('/orders/<int:order_id>/close', methods=('POST',))
 def close_order(order_id):
+    payment_method = request.form.get('payment_method', 'indefinido')
+    
     conn = get_db_connection()
     
     # Get all current order items for this order
@@ -389,9 +391,9 @@ def close_order(order_id):
                 VALUES (?, ?, ?, ?, ?)
             ''', (item['menu_item_id'], -item['quantity'], 'out', movement_notes, datetime.now()))
     
-    # Close the order
-    conn.execute('UPDATE orders SET status = ?, closed_at = ? WHERE id = ?', 
-                ('closed', datetime.now(), order_id))
+    # Close the order with payment method
+    conn.execute('UPDATE orders SET status = ?, closed_at = ?, payment_method = ? WHERE id = ?', 
+                ('closed', datetime.now(), payment_method, order_id))
     
     conn.commit()
     conn.close()
@@ -450,6 +452,7 @@ if __name__ == '__main__':
         created_at DATETIME NOT NULL,
         closed_at DATETIME,
         comments TEXT,
+        payment_method TEXT NOT NULL,
         total_amount DECIMAL(10,2) DEFAULT 0,
         FOREIGN KEY (table_id) REFERENCES restaurant_tables (id)
     )''')

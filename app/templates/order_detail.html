@@ -16,12 +16,59 @@
         <p><strong>Cliente:</strong> {{ order['customer_name'] or 'Sin nombre' }}</p>
         <p><strong>Iniciada:</strong> {{ order['created_at'][:16] }}</p>
         <p><strong>Estado:</strong> {{ order['status'].title() }}</p>
+        <p><strong>Método de Pago:</strong> 
+            {% if order['payment_method'] == 'efectivo' %}Efectivo
+            {% elif order['payment_method'] == 'transferencia' %}Transferencia Bancaria
+            {% elif order['payment_method'] == 'qr' %}Código QR
+            {% elif order['payment_method'] == 'tarjeta' %}Tarjeta
+            {% else %}{{ order['payment_method'] or 'No especificado' }}
+            {% endif %}
+        </p>
     </div>
     
     <a href="{{ url_for('orders') }}" class="button">Volver a Órdenes</a>
-    <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post" style="display:inline;">
-        <button type="submit" onclick="return confirm('¿Cerrar esta orden?')">Cerrar Orden</button>
-    </form>
+    
+    {% if order['status'] == 'active' %}
+    <button type="button" onclick="showPaymentModal()">Cerrar Orden</button>
+    
+    <!-- Payment Method Modal -->
+    <div id="paymentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%;">
+            <h3>Seleccionar Método de Pago</h3>
+            <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post">
+                <label>Método de Pago
+                    <select name="payment_method" required style="margin-bottom: 20px;">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia Bancaria</option>
+                        <option value="qr">Código QR</option>
+                        <option value="tarjeta">Tarjeta</option>
+                    </select>
+                </label>
+                <div>
+                    <button type="submit" style="margin-right: 10px;">Cerrar Orden</button>
+                    <button type="button" onclick="hidePaymentModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function showPaymentModal() {
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+        
+        function hidePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('paymentModal').onclick = function(e) {
+            if (e.target === this) {
+                hidePaymentModal();
+            }
+        }
+    </script>
+    {% endif %}
     
     <h3>Artículos de la Orden</h3>
     {% if order_items %}

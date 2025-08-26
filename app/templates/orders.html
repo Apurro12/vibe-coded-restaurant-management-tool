@@ -27,6 +27,7 @@
                 <th>Artículos</th>
                 <th>Total</th>
                 <th>Cliente</th>
+                <th>Método Pago</th>
                 <th>Comentarios</th>
                 <th>Acciones</th>
             </tr>
@@ -40,6 +41,14 @@
                 <td class="items-cell">{{ order['items_list'] or 'Sin artículos' }}</td>
                 <td>${{ "%.2f"|format(order['calculated_total'] or 0) }}</td>
                 <td>{{ order['customer_name'] or '-' }}</td>
+                <td>
+                    {% if order['payment_method'] == 'efectivo' %}Efectivo
+                    {% elif order['payment_method'] == 'transferencia' %}Transferencia
+                    {% elif order['payment_method'] == 'qr' %}QR
+                    {% elif order['payment_method'] == 'tarjeta' %}Tarjeta
+                    {% else %}{{ order['payment_method'] or '-' }}
+                    {% endif %}
+                </td>
                 <td>{{ order['comments'] or '-' }}</td>
                 <td>
                     <a href="{{ url_for('order_detail', order_id=order['id']) }}">Ver</a>
