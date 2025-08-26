@@ -35,7 +35,7 @@
                 <td>{{ log['timestamp'][:19] }}</td>
                 <td class="action-{{ log['action'].lower() }}">{{ log['action'] }}</td>
                 <td>{{ log['menu_item_id'] }}</td>
-                <td>{{ log['current_name'] or '(deleted)' }}</td>
+                <td>{{ log['current_name'] or '<strong>item eliminado</strong>' | safe }}</td>
                 <td class="values-cell">{{ log['old_values'] or '-' }}</td>
                 <td class="values-cell">{{ log['new_values'] or '-' }}</td>
             </tr>
