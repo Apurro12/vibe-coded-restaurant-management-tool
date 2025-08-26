@@ -51,7 +51,7 @@
             <h3>Métodos de Pago</h3>
             <p><strong>Total de la Orden: $<span id="orderTotal">{{ "%.2f"|format(total) }}</span></strong></p>
             
-            <form action="{{ url_for('close_order', order_id=order['id']) }}" method="post" id="paymentForm">
+            <form action="{{ url_for('orders.close_order', order_id=order['id']) }}" method="post" id="paymentForm">
                 <div id="paymentsContainer">
                     <!-- First payment row -->
                     <div class="payment-row" style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
@@ -181,7 +181,7 @@
                     <td>{{ item['category'].title() }}</td>
                     <td>
                         {% if order['status'] == 'active' %}
-                        <form action="{{ url_for('edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
+                        <form action="{{ url_for('orders.edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
                             <input type="number" name="quantity" value="{{ item['quantity'] }}" min="1" style="width:60px;" onchange="this.form.submit()">
                             <input type="hidden" name="notes" value="{{ item['notes'] or '' }}">
                         </form>
@@ -193,7 +193,7 @@
                     <td>${{ "%.2f"|format(item['quantity'] * item['unit_price']) }}</td>
                     <td>
                         {% if order['status'] == 'active' %}
-                        <form action="{{ url_for('edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
+                        <form action="{{ url_for('orders.edit_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;">
                             <input type="text" name="notes" value="{{ item['notes'] or '' }}" style="width:100px;" placeholder="Notas">
                             <input type="hidden" name="quantity" value="{{ item['quantity'] }}">
                             <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;">💾</button>
@@ -204,7 +204,7 @@
                     </td>
                     {% if order['status'] == 'active' %}
                     <td>
-                        <form action="{{ url_for('remove_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar este artículo?')">
+                        <form action="{{ url_for('orders.remove_order_item', order_id=order['id'], item_id=item['id']) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar este artículo?')">
                             <button type="submit" style="background:none;border:none;color:red;cursor:pointer;">🗑️</button>
                         </form>
                     </td>
@@ -226,7 +226,7 @@
     {% if order['status'] == 'active' %}
     <div class="add-item-form">
         <h4>Agregar Artículo a la Orden</h4>
-        <form action="{{ url_for('add_order_item', order_id=order['id']) }}" method="post">
+        <form action="{{ url_for('orders.add_order_item', order_id=order['id']) }}" method="post">
             <label>Artículo del Menú
                 <select name="menu_item_id" required>
                     <option value="">Seleccionar artículo...</option>
