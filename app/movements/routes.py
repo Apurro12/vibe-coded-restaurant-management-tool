@@ -34,11 +34,11 @@ def add_movement():
         
         # Determine movement type based on quantity
         if quantity_change > 0:
-            movement_type = 'in'
+            movement_type = 'Entrada'
         elif quantity_change < 0:
-            movement_type = 'out'
+            movement_type = 'Salida'
         else:
-            movement_type = 'adjust'
+            movement_type = 'Comentario'
         
         conn = get_db_connection()
         conn.execute('''
