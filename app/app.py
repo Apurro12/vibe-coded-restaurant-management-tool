@@ -1,15 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
+import os
 from datetime import datetime
 
 app = Flask(__name__)
-DATABASE = 'inventory.db'
+DATABASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'inventory.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
+# TODO: this logic should be updated, I need to save the partial changes
 def get_current_stock_for_menu_item(menu_item_id):
     """Calculate current stock for a menu item based on movements"""
     conn = get_db_connection()
