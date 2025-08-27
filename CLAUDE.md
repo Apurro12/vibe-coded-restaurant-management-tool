@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a comprehensive Flask-based restaurant management system with inventory tracking, order management, and table service capabilities. The system features a Spanish frontend with English backend code, designed for restaurant operations including menu management, stock control, order processing, and complete audit trails.
+This is a comprehensive Flask-based restaurant management system with inventory tracking, order management, and table service capabilities. The system features a Spanish frontend with English backend code, designed for restaurant operations including menu management, stock control, order processing, payment handling, and complete audit trails.
 
 ## Commands
 
@@ -22,72 +22,84 @@ pip install flask requests
 cd app
 python app.py
 ```
-The application runs on `http://127.0.0.1:5001` (port changed from default 5000 to avoid conflicts).
+The application runs on `http://127.0.0.1:5000` (default Flask port).
 
 ### Testing
 ```bash
-# Quick endpoint testing (with server running)
+# Quick endpoint testing (with server running on port 5001)
 python3 quick_test.py
 
 # Comprehensive E2E testing (stop server first to avoid database locks)
-python3 test_app.py
+python3 tests/integration/test_app.py
 
 # Automated test runner
 ./run_tests.sh
 ```
 
 ### Database Operations
-The SQLite database (`inventory.db`) is automatically created with all necessary tables when the application starts. No manual database setup required.
+The SQLite database (`inventory.db`) is automatically created with all necessary tables when the application starts. For testing, the system supports custom database paths via environment variables. No manual database setup required.
 
 ## Code Architecture
 
 ### Core System Design
-This is a **monolithic Flask application** with all business logic in `app/app.py`. The system evolved from simple inventory management to a full restaurant management platform with these key architectural decisions:
+This is a **modularized Flask application** using **Blueprint architecture** with the main app coordinating separate modules. The system evolved from simple inventory management to a full restaurant management platform with these key architectural decisions:
+
+**Modular Blueprint Structure**:
+- `app/app.py` - Main application with dashboard and blueprint registration
+- `app/menu/routes.py` - Menu management routes
+- `app/orders/routes.py` - Order processing and management routes  
+- `app/tables/routes.py` - Restaurant table management routes
+- `app/movements/routes.py` - Stock movement routes
+- `app/utils.py` - Database utilities and helper functions
 
 **Stock Management Philosophy**: Stock changes only occur when orders are **closed**, not when items are added to orders. This prevents inventory conflicts during order editing.
 
-**Dual Inventory System**: 
-- Legacy `items` table (maintained for backward compatibility)
-- Modern `menu_items` with `stockable` boolean flag for inventory control
-- Both systems supported in `movements` table via `item_id` and `menu_item_id` foreign keys
-
-### Database Schema (8 Tables)
+### Database Schema (9 Tables)
 
 **Core Menu & Inventory**:
 - `menu_items` - Menu items with prices, descriptions, categories, and stockable flag
-- `movements` - All stock changes with running totals, supports both legacy items and menu items
+- `movements` - All stock changes with partial_stock tracking for running totals
 - `menu_audit` - Complete audit trail for menu changes
 
 **Restaurant Operations**:
-- `restaurant_tables` - Table management with capacity
-- `orders` - Order tracking with status (active/closed), customer info
+- `restaurant_tables` - Table management with capacity, status, customer info, and open order tracking
+- `orders` - Order tracking with status (active/closed), customer info, timestamps, total amounts
 - `order_items` - Items within orders with quantities, prices, notes
 - `order_item_history` - Complete audit trail of all order modifications (add/edit/remove)
-
-**Legacy**:
-- `items` - Original inventory system (kept for backward compatibility)
+- `order_payments` - Payment tracking with support for split payments and multiple payment methods
 
 ### Key Business Logic Functions
 
 **Stock Calculations**:
 - `get_current_stock_for_menu_item(menu_item_id)` - Calculates running stock totals from movements
+- `get_last_stock(menu_item_id)` - Gets the most recent partial_stock value for running totals
 - `log_menu_audit(menu_item_id, action, old_values, new_values)` - Audit trail logging
 
 **Order Processing**:
 - Stock movements are created in `close_order()` function, not in `add_order_item()`
 - Order editing routes: `/orders/<id>/items/<item_id>/edit` and `/orders/<id>/items/<item_id>/remove`
+- Payment processing with split payment support in `close_order()`
 - All order changes logged to `order_item_history` table
 
-### Route Structure
+### Route Structure (Blueprint-based)
 ```
 / - Dashboard with stockable items and stock levels
-/menu - Menu management with CRUD operations
+/menu - Menu management with CRUD operations and audit trail
+/menu/add - Add new menu items (POST)
+/menu/edit/<id> - Edit menu items (GET/POST)
+/menu/delete/<id> - Delete menu items (POST)  
+/menu/audit - View menu change history
 /movements - Stock movement history with running totals
+/movements/add - Add stock movements (GET/POST)
 /tables - Restaurant table management
-/orders - Order listing and management
-/orders/new/<table_id> - Create new order for specific table
+/tables/add - Add new tables (GET/POST)
+/orders - Order listing with payment details and CSV-like format
+/orders/new/<table_id> - Create new order for specific table (GET/POST)
 /orders/<order_id> - Order detail with editing capabilities (active orders only)
-/orders/<order_id>/close - Close order and trigger stock movements
+/orders/<order_id>/add_item - Add items to orders (POST)
+/orders/<order_id>/items/<item_id>/edit - Edit order items (POST)
+/orders/<order_id>/items/<item_id>/remove - Remove order items (POST)
+/orders/<order_id>/close - Close order, process payments, and trigger stock movements (POST)
 ```
 
 ### Frontend Architecture
@@ -124,26 +136,42 @@ Menu items have a `stockable` boolean flag. Only stockable items:
 - Appear on the dashboard inventory display
 - Affect running stock calculations
 
+### Payment Processing
+The system supports multiple payment methods with split payment capabilities:
+- Payment validation ensures total payments match order totals (within 1 cent tolerance)
+- Multiple payment methods per order (cash, card, etc.)
+- Payment history stored in `order_payments` table
+- Payments are recorded when orders are closed
+
 ### Running Stock Calculations
-The system uses SQL window functions for running totals in movement history:
-```sql
-SUM(m2.quantity_change) as running_stock
-FROM movements m2 ON m2.menu_item_id = m.menu_item_id AND m2.date <= m.date
-```
+The system uses two approaches for stock calculations:
+1. **SUM-based calculation** (`get_current_stock_for_menu_item`) - Sums all quantity changes
+2. **Partial stock tracking** (`get_last_stock`) - Uses `partial_stock` field for running totals
 
 ### Audit Trail Implementation
-Two separate audit systems:
-1. `menu_audit` - Tracks all menu item changes (create/update/delete)
-2. `order_item_history` - Tracks all order modifications with timestamps
+Multiple audit systems ensure complete traceability:
+1. `menu_audit` - Tracks all menu item changes (create/update/delete) with old/new values
+2. `order_item_history` - Tracks all order modifications with action types: 'added', 'old_edited', 'new_edited', 'removed'
+
+### Order Item History Actions
+- `'added'` - Item added to order
+- `'old_edited'` - Original state before edit
+- `'new_edited'` - New state after edit  
+- `'removed'` - Item removed from order
 
 ## Testing Architecture
 
 The system includes comprehensive testing with three approaches:
-1. **Quick endpoint testing** (`quick_test.py`) - Safe to run with server active
-2. **Full E2E testing** (`test_app.py`) - Requires server shutdown to avoid DB locks
-3. **Manual testing guide** (`TESTING.md`) - Detailed step-by-step validation procedures
+1. **Quick endpoint testing** (`quick_test.py`) - Safe to run with server active on port 5001
+2. **Full E2E testing** (`tests/integration/test_app.py`) - Requires server shutdown to avoid DB locks, uses custom test database
+3. **Automated test runner** (`run_tests.sh`) - Handles dependencies and server checks
 
-Testing follows the complete restaurant workflow: create menu items (stockable/non-stockable) → add stock → create table → place order → edit order → close order → verify stock changes.
+The E2E testing includes:
+- Database isolation using environment variables
+- Complete restaurant workflow validation: create menu items (stockable/non-stockable) → add stock → create table → place order → edit order → close order → verify stock changes
+- Payment processing validation
+- Order history verification
+- Stock movement verification for stockable vs non-stockable items
 
 ## Translation Implementation
 

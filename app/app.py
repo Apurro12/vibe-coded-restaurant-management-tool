@@ -42,6 +42,14 @@ def index():
 app.register_blueprint(main_bp)
 
 if __name__ == '__main__':
+    import sys
+    
+    # Check for database path argument
+    if len(sys.argv) > 1:
+        import os
+        os.environ['DATABASE_PATH'] = sys.argv[1]
+        print(f"Using database: {sys.argv[1]}")
+    
     # Initialize database
     init_database()
     app.run(debug=True, port=5000)

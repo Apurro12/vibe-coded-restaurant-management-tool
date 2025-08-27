@@ -2,7 +2,7 @@ import sqlite3
 import os
 from datetime import datetime
 
-DATABASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'inventory.db')
+
 
 
 def get_last_stock(menu_item_id: str):
@@ -24,7 +24,12 @@ def get_last_stock(menu_item_id: str):
         
         return last_movement["partial_stock"] or 0 #TODO check why is giving None sometimes
 
-def get_db_connection():
+def get_db_connection(DATABASE = None):
+    if DATABASE is None:
+        # Check environment variable first, then fallback to default
+        DATABASE = os.environ.get('DATABASE_PATH', 
+                                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'inventory.db'))
+
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -50,11 +55,10 @@ def log_menu_audit(menu_item_id, action, old_values=None, new_values=None):
     conn.commit()
     conn.close()
 
-def init_database():
+def init_database(DATABASE = None):
     """Initialize database tables"""
-    conn = get_db_connection()
+    conn = get_db_connection(DATABASE)
 
-    
     # Movements tracking table
     conn.execute('''CREATE TABLE IF NOT EXISTS movements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
