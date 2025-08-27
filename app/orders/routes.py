@@ -1,10 +1,11 @@
 from flask import render_template, request, redirect, url_for
 from datetime import datetime
+
 from . import orders_bp
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import get_db_connection
+from utils import get_db_connection, get_last_stock
 
 # Order management routes
 @orders_bp.route('/')
@@ -13,17 +14,18 @@ def orders():
     
     # Get all orders in CSV-like format
     orders = conn.execute('''
-        SELECT o.id, rt.table_number, o.created_at, o.closed_at, 
-               o.customer_name, o.status,
-               COUNT(oi.id) as item_count,
-               SUM(oi.quantity * oi.unit_price) as calculated_total,
-               GROUP_CONCAT(mi.name || ': ' || oi.quantity, ', ') as items_list
-        FROM orders o
-        JOIN restaurant_tables rt ON o.table_id = rt.table_number
-        LEFT JOIN order_items oi ON o.id = oi.order_id
-        LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
-        GROUP BY o.id
-        ORDER BY o.created_at DESC
+        SELECT  orders.id, 
+                orders.table_id, 
+                orders.customer_name, 
+                orders.status,
+                orders.created_at, 
+                orders.closed_at, 
+                SUM(order_items.quantity * order_items.unit_price) as calculated_total,
+                GROUP_CONCAT(order_items.menu_item_name || ': ' || order_items.quantity, ', ') as items_list
+                          
+        FROM orders     
+        LEFT JOIN order_items ON orders.id = order_items.order_id
+        GROUP BY orders.id
     ''').fetchall()
     
     # Get payment information for each order
@@ -55,12 +57,32 @@ def new_order(table_id):
             VALUES (?, ?, ?, ?)
         ''', (table_id, customer_name, datetime.now(), 'active'))
 
+        conn.commit()
+
+        order_id = conn.execute('''
+                    select "id"
+                    from orders
+                    where table_id = ? and status = ?
+                ''', (table_id, 'active')).fetchone()["id"]
+
         conn.execute('''
             update restaurant_tables
             set "status" = 'in use'
             where table_number = ?
         ''', (table_id,))
-        
+
+        conn.execute('''
+            update restaurant_tables
+            set "customer_name" = ?
+            where table_number = ?
+        ''', (customer_name, table_id))
+
+        conn.execute('''
+            update restaurant_tables
+            set "open_order_number" = ?
+            where table_number = ?
+        ''', (order_id, table_id))
+
         order_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -119,19 +141,19 @@ def add_order_item(order_id):
     conn = get_db_connection()
     
     # Get menu item details (price and stockable status)
-    menu_item = conn.execute('SELECT price, stockable, name FROM menu_items WHERE id = ?', (menu_item_id,)).fetchone()
+    menu_item = conn.execute('SELECT price, name FROM menu_items WHERE id = ?', (menu_item_id,)).fetchone()
     
     # Add order item
     conn.execute('''
-        INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, notes) 
-        VALUES (?, ?, ?, ?, ?)
-    ''', (order_id, menu_item_id, quantity, menu_item['price'], notes))
+        INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, notes, menu_item_name) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (order_id, menu_item_id, quantity, menu_item['price'], notes, menu_item['name']))
     
     # Log the action in order item history
     conn.execute('''
-        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (order_id, menu_item_id, 'added', quantity, menu_item['price'], notes, datetime.now()))
+        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp, menu_item_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_id, menu_item_id, 'added', quantity, menu_item['price'], notes, datetime.now(), menu_item['name']))
     
     conn.commit()
     conn.close()
@@ -214,7 +236,7 @@ def close_order(order_id):
     
     # Get all current order items for stock movements
     order_items = conn.execute('''
-        SELECT oi.menu_item_id, oi.quantity, mi.name, mi.stockable
+        SELECT oi.menu_item_id, oi.quantity, menu_item_name, mi.stockable
         FROM order_items oi
         JOIN menu_items mi ON oi.menu_item_id = mi.id
         WHERE oi.order_id = ?
@@ -223,11 +245,13 @@ def close_order(order_id):
     # Create stock movements for all stockable items when order is closed
     for item in order_items:
         if item['stockable']:
-            movement_notes = f"Auto: Order #{order_id} closed - {item['name']} x{item['quantity']}"
+            last_movement = get_last_stock(item["menu_item_id"])
+            new_stock = last_movement - item['quantity']
+            movement_notes = f"Auto: Order #{order_id} closed - {item['menu_item_name']} x{item['quantity']}"
             conn.execute('''
-                INSERT INTO movements (menu_item_id, quantity_change, movement_type, notes, date) 
-                VALUES (?, ?, ?, ?, ?)
-            ''', (item['menu_item_id'], -item['quantity'], 'out', movement_notes, datetime.now()))
+                INSERT INTO movements (menu_item_id, quantity_change, movement_type, notes, date, menu_item_name, partial_stock) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (item['menu_item_id'], -item['quantity'], 'out', movement_notes, datetime.now(), item['menu_item_name'], new_stock))
     
     # Save all payments
     for method, amount in zip(payment_methods, amounts):
@@ -240,6 +264,24 @@ def close_order(order_id):
     # Close the order
     conn.execute('UPDATE orders SET status = ?, closed_at = ? WHERE id = ?', 
                 ('closed', datetime.now(), order_id))
+    
+    table_number = conn.execute('''
+        SELECT table_number
+        FROM restaurant_tables
+        WHERE open_order_number = ?
+        and status = ?
+    ''', (order_id, 'in use')).fetchone()["table_number"]
+
+    conn.execute(
+        'UPDATE restaurant_tables SET status = ? WHERE table_number = ? and status = ?',
+        ('available', table_number, 'in use')
+    )
+
+    conn.execute(
+        'UPDATE restaurant_tables SET open_order_number = null WHERE table_number = ? and status = ?',
+        (table_number, 'in use')
+    )
+
     
     conn.commit()
     conn.close()

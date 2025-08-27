@@ -4,7 +4,7 @@ from . import movements_bp
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import get_db_connection
+from utils import get_db_connection, get_last_stock
 
 # Movements management
 @movements_bp.route('/')
@@ -18,6 +18,8 @@ def movements():
     ''').fetchall()
     conn.close()
     return render_template('movements/index.html', movements=movements)
+
+
 
 @movements_bp.route('/add', methods=('GET', 'POST'))
 def add_movement():
@@ -35,29 +37,20 @@ def add_movement():
         else:
             movement_type = 'Comentario'
         
-        conn = get_db_connection()
 
-        last_movement = conn.execute('''
-            select "partial_stock"
-            from movements
-            where "id" in (
-                SELECT max("id") "id"
-                FROM movements
-                where menu_item_id = ?
-            )''', (menu_item_id,)).fetchone()
         
         # If is the first movement return zero
         # Here I need to be sure that is not None or something strange
-        if last_movement is None:
-            last_movement = 0
-        else:
-            last_movement = last_movement["partial_stock"]
-        last_movement += quantity_change
 
+
+        last_movement = get_last_stock(menu_item_id)
+        new_stock = last_movement + quantity_change
+
+        conn = get_db_connection()
         conn.execute('''
             INSERT INTO movements (menu_item_id, menu_item_name, quantity_change, movement_type, notes, date, partial_stock) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (menu_item_id, item_name, quantity_change, movement_type, notes, datetime.now(), last_movement))
+        ''', (menu_item_id, item_name, quantity_change, movement_type, notes, datetime.now(), new_stock))
         conn.commit()
         conn.close()
         return redirect(url_for('movements.movements'))

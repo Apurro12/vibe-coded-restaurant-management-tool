@@ -4,6 +4,26 @@ from datetime import datetime
 
 DATABASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'inventory.db')
 
+
+def get_last_stock(menu_item_id: str):
+        conn = get_db_connection()
+
+        last_movement = conn.execute('''
+            select "partial_stock"
+            from movements
+            where "id" in (
+                SELECT max("id") "id"
+                FROM movements
+                where menu_item_id = ?
+            )''', (menu_item_id,)).fetchone()
+        
+        conn.close()
+        
+        if last_movement is None:
+            return 0
+        
+        return last_movement["partial_stock"] or 0 #TODO check why is giving None sometimes
+
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
@@ -52,7 +72,8 @@ def init_database():
         table_number INTEGER NOT NULL UNIQUE,
         capacity INTEGER NOT NULL,
         status TEXT NOT NULL,
-        customer_name TEXT  
+        customer_name TEXT,
+        open_order_number INTEGER
     )''')
     
     # Menu items (food and drinks)
@@ -81,6 +102,7 @@ def init_database():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id INTEGER NOT NULL,
         menu_item_id INTEGER NOT NULL,
+        menu_item_name TEXT NOT NULL,
         quantity INTEGER NOT NULL DEFAULT 1,
         unit_price DECIMAL(10,2) NOT NULL,
         notes TEXT,
@@ -115,6 +137,7 @@ def init_database():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id INTEGER NOT NULL,
         menu_item_id INTEGER NOT NULL,
+        menu_item_name TEXT NOT NULL,
         action TEXT NOT NULL,
         quantity INTEGER,
         unit_price DECIMAL(10,2),

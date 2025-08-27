@@ -13,7 +13,8 @@ def tables():
         SELECT  table_number,
                 capacity,
                 status,
-                customer_name as customer
+                customer_name,
+                open_order_number
         FROM restaurant_tables
     ''').fetchall()
     conn.close()
