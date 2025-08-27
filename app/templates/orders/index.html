@@ -60,11 +60,6 @@
                 <td>{{ order['comments'] or '-' }}</td>
                 <td>
                     <a href="{{ url_for('orders.order_detail', order_id=order['id']) }}">Ver</a>
-                    {% if order['status'] == 'active' %}
-                    | <form action="{{ url_for('orders.close_order', order_id=order['id']) }}" method="post" style="display:inline;">
-                        <button type="submit" style="background:none;border:none;color:blue;text-decoration:underline;cursor:pointer;" onclick="return confirm('¿Cerrar esta orden?')">Cerrar</button>
-                    </form>
-                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
