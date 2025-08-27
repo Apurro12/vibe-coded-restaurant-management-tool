@@ -113,6 +113,15 @@ def init_database(DATABASE = None):
         FOREIGN KEY (order_id) REFERENCES orders (id),
         FOREIGN KEY (menu_item_id) REFERENCES menu_items (id)
     )''')
+
+    conn.execute('''CREATE TABLE IF NOT EXISTS manual_money_movements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payment_method TEXT NOT NULL,
+    description TEXT,
+    amount DECIMAL(10,2),
+    date DATETIME NOT NULL,
+    movement_type TEXT NOT NULL
+    )''')
     
     # Order payments - supports split payments
     conn.execute('''CREATE TABLE IF NOT EXISTS order_payments (
