@@ -1,3 +1,7 @@
 inventory.db
 app/*/__pycache__/*
 app/__pycache__/*
+app/templates/.DS_Store
+tests/test.db
+.vscode/
+ENDPOINTS.MD
