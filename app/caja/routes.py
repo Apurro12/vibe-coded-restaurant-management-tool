@@ -3,6 +3,7 @@ from . import caja_bp
 import sys
 import os
 from datetime import datetime
+from collections import defaultdict
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import get_db_connection
@@ -40,7 +41,7 @@ both_tables as (
 
 select *
 from both_tables 
-order by "date" DESC, 2 
+order by "date" DESC 
 """
 
 # Caja management routes
@@ -48,9 +49,13 @@ order by "date" DESC, 2
 def caja():
     conn = get_db_connection()
     caja_movements = conn.execute(caja_query).fetchall()
+    # Calculate totals per date
+    date_totals = defaultdict(float)
+    for row in caja_movements:
+        date_totals[row['date']] += float(row['amount'])
     conn.commit()
     conn.close()
-    return render_template('caja/index.html', caja_movements=caja_movements)
+    return render_template('caja/index.html', caja_movements=caja_movements, date_totals=date_totals)
 
 
 @caja_bp.route('/modify_money', methods=('POST',) )
@@ -68,7 +73,10 @@ def modify_money():
     ''', (datetime.now(), payment_method, description, amount, movement_type))
 
     caja_movements = conn.execute(caja_query).fetchall()
-
+    # Calculate totals per date
+    date_totals = defaultdict(float)
+    for row in caja_movements:
+        date_totals[row['date']] += float(row['amount'])
     conn.commit()
     conn.close()
-    return render_template('caja/index.html', caja_movements=caja_movements)
+    return render_template('caja/index.html', caja_movements=caja_movements, date_totals=date_totals)
