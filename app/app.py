@@ -6,7 +6,7 @@ from menu import menu_bp
 from orders import orders_bp
 from tables import tables_bp
 from movements import movements_bp
-
+from caja import caja_bp
 app = Flask(__name__)
 
 # Register blueprints
@@ -14,6 +14,7 @@ app.register_blueprint(menu_bp)
 app.register_blueprint(orders_bp)
 app.register_blueprint(tables_bp)
 app.register_blueprint(movements_bp)
+app.register_blueprint(caja_bp)
 
 # Main blueprint for the dashboard
 main_bp = Blueprint('main', __name__)
