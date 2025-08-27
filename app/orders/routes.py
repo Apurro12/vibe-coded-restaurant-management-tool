@@ -26,6 +26,7 @@ def orders():
         FROM orders     
         LEFT JOIN order_items ON orders.id = order_items.order_id
         GROUP BY orders.id
+        ORDER BY orders.id DESC
     ''').fetchall()
     
     # Get payment information for each order
@@ -144,10 +145,13 @@ def add_order_item(order_id):
     menu_item = conn.execute('SELECT price, name FROM menu_items WHERE id = ?', (menu_item_id,)).fetchone()
     
     # Add order item
-    conn.execute('''
+    cursor = conn.execute('''
         INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, notes, menu_item_name) 
         VALUES (?, ?, ?, ?, ?, ?)
     ''', (order_id, menu_item_id, quantity, menu_item['price'], notes, menu_item['name']))
+    
+    # Get the auto-incremental ID of the just inserted order item
+    order_item_id = cursor.lastrowid
     
     # Log the action in order item history
     conn.execute('''
@@ -174,11 +178,19 @@ def edit_order_item(order_id, item_id):
         UPDATE order_items SET quantity = ?, notes = ? WHERE id = ?
     ''', (quantity, notes, item_id))
     
-    # Log the action in order item history
+
+    # Log the edit action in order item history
     conn.execute('''
-        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (order_id, current_item['menu_item_id'], 'edited', quantity, current_item['unit_price'], notes, datetime.now()))
+        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp, menu_item_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_id, current_item['menu_item_id'], 'old_edited', current_item['quantity'], current_item['unit_price'], current_item['notes'], datetime.now(), current_item["menu_item_name"]))
+    
+
+    # Log the edit action in order item history
+    conn.execute('''
+        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp, menu_item_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_id, current_item['menu_item_id'], 'new_edited', quantity, current_item['unit_price'], notes, datetime.now(), current_item["menu_item_name"]))
     
     conn.commit()
     conn.close()
@@ -190,13 +202,14 @@ def remove_order_item(order_id, item_id):
     
     # Get current item details for history before deleting
     current_item = conn.execute('SELECT * FROM order_items WHERE id = ?', (item_id,)).fetchone()
-    
-    # Log the removal in order item history
+
+    # Log the edit action in order item history
     conn.execute('''
-        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (order_id, current_item['menu_item_id'], 'removed', current_item['quantity'], current_item['unit_price'], current_item['notes'], datetime.now()))
+        INSERT INTO order_item_history (order_id, menu_item_id, action, quantity, unit_price, notes, timestamp, menu_item_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_id, current_item['menu_item_id'], 'removed', current_item["quantity"], current_item['unit_price'], current_item["notes"], datetime.now(), current_item["menu_item_name"]))
     
+
     # Remove the order item
     conn.execute('DELETE FROM order_items WHERE id = ?', (item_id,))
     
@@ -273,15 +286,14 @@ def close_order(order_id):
     ''', (order_id, 'in use')).fetchone()["table_number"]
 
     conn.execute(
-        'UPDATE restaurant_tables SET status = ? WHERE table_number = ? and status = ?',
-        ('available', table_number, 'in use')
-    )
-
-    conn.execute(
         'UPDATE restaurant_tables SET open_order_number = null WHERE table_number = ? and status = ?',
         (table_number, 'in use')
     )
 
+    conn.execute(
+        'UPDATE restaurant_tables SET status = ? WHERE table_number = ? and status = ?',
+        ('available', table_number, 'in use')
+    )
     
     conn.commit()
     conn.close()
