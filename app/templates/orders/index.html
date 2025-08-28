@@ -35,7 +35,7 @@
         <tbody>
             {% for order in orders %}
             <tr>
-                <td>{{ order['table_number'] }}</td>
+                <td>{{ order['table_id'] }}</td>
                 <td>{{ order['created_at'][:16] if order['created_at'] else '-' }}</td>
                 <td>{{ order['closed_at'][:16] if order['closed_at'] else '-' }}</td>
                 <td class="items-cell">{{ order['items_list'] or 'Sin artículos' }}</td>

@@ -14,18 +14,27 @@ def orders():
     
     # Get all orders in CSV-like format
     orders = conn.execute('''
-        SELECT  orders.id, 
-                orders.table_id, 
-                orders.customer_name, 
-                orders.status,
-                orders.created_at, 
-                orders.closed_at, 
-                SUM(order_items.quantity * order_items.unit_price) as calculated_total,
-                GROUP_CONCAT(order_items.menu_item_name || ': ' || order_items.quantity, ', ') as items_list
-                          
+        SELECT  
+            orders.id, 
+            orders.table_id, 
+            orders.customer_name, 
+            orders.status,
+            orders.created_at, 
+            orders.closed_at,
+            order_items.quantity,
+            order_items.unit_price,
+            SUM(order_items.quantity * order_items.unit_price) as calculated_total,
+            GROUP_CONCAT(order_items.menu_item_name || ': ' || order_items.quantity, ', ') as items_list
+                        
         FROM orders     
         LEFT JOIN order_items ON orders.id = order_items.order_id
-        GROUP BY orders.id
+        GROUP BY 	orders.id, 
+            orders.table_id, 
+            orders.customer_name, 
+            orders.status,
+            orders.created_at, 
+            orders.closed_at
+            
         ORDER BY orders.id DESC
     ''').fetchall()
     
@@ -101,10 +110,9 @@ def order_detail(order_id):
     
     # Get order info
     order = conn.execute('''
-        SELECT o.*, rt.table_number 
-        FROM orders o 
-        JOIN restaurant_tables rt ON o.table_id = rt.table_number 
-        WHERE o.id = ?
+        SELECT *
+        FROM orders
+        WHERE orders.id = ?
     ''', (order_id,)).fetchone()
     
     # Get order items

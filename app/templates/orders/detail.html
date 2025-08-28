@@ -18,7 +18,7 @@
 </head>
 <body>
     <div class="order-summary">
-        <h2>Orden #{{ order['id'] }} - Mesa {{ order['table_number'] }}</h2>
+        <h2>Orden #{{ order['id'] }} - Mesa {{ order['table_id'] }}</h2>
         <p><strong>Cliente:</strong> {{ order['customer_name'] or 'Sin nombre' }}</p>
         <p><strong>Iniciada:</strong> {{ order['created_at'][:16] }}</p>
         <p><strong>Estado:</strong> {{ order['status'].title() }}</p>
